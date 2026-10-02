@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: snapexplain
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SECRET
+        generateValue: true
+      - key: PRO_PRICE_NGN
+        value: "1500"
+      - key: PRO_PRICE_USD
+        value: "2"
+      - key: USD_ENABLED
+        value: "0"
+      - key: BASE_URL
+        sync: false
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: GA_ID
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: WHATSAPP_NUMBER
+        sync: false
+      - key: ADMIN_KEY
+        sync: false

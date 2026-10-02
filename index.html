@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SnapExplain – Snap a notice, extract the text</title>
+<meta name="description" content="Snap or upload a photo of a notice board and instantly extract editable text. Copy, save, send, translate and listen.">
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg">
+<meta name="theme-color" content="#4f46e5"><link rel="stylesheet" href="style.css">
+</head><body>
+<div class="top">
+  <div class="bar-top">
+    <div><div class="logo">SnapExplain</div><div class="tag">Snap it. Extract it. Understand it.</div></div>
+    <button id="plan" class="pill">Free · Go Pro</button>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="tabs">
+    <button id="tScan" class="on">Scan</button><button id="tSaved">Saved</button>
+  </div>
+
+  <p class="alt" id="alt">Card not working? <a href="#" id="wa">Pay on WhatsApp</a> · <a href="#" id="code">Enter access code</a></p>
+
+  <section id="scan">
+    <div class="card">
+      <h2><span class="n">1</span>Add an image</h2>
+      <div id="drop" class="drop">
+        <img id="preview" class="hide" alt="Selected image">
+        <p id="dropHint">Take a photo of a notice or upload one from your device.</p>
+      </div>
+      <div class="row">
+        <button id="camBtn" class="btn primary">Take photo</button>
+        <label class="btn ghost">Upload image<input id="up" type="file" accept="image/*"></label>
+        <button id="rmImg" class="btn danger hide">Remove</button>
+      </div>
+      <input id="camFallback" type="file" accept="image/*" capture="environment">
+    </div>
+
+    <div class="card">
+      <h2><span class="n">2</span>Extract text</h2>
+      <label class="lbl" for="ocrLang">Language on the notice</label>
+      <select id="ocrLang">
+        <option value="eng">English</option><option value="fra">French</option><option value="spa">Spanish</option>
+        <option value="por">Portuguese</option><option value="deu">German</option><option value="ita">Italian</option>
+      </select>
+      <label class="chk"><input type="checkbox" id="acc" checked> Accurate mode (AI) <em>3 free/day</em></label>
+      <button id="extract" class="btn primary block" disabled>Extract text</button>
+      <div class="bar hide" id="bar"><i id="fill"></i></div>
+      <div id="status"></div>
+    </div>
+
+    <div class="card hide" id="result">
+      <h2><span class="n">3</span>Edit &amp; use</h2>
+      <textarea id="text" placeholder="Extracted text appears here"></textarea>
+      <div class="actions">
+        <button id="copy" class="btn ghost">Copy</button>
+        <button id="share" class="btn ghost">Send</button>
+        <button id="save" class="btn ghost">Save</button>
+        <button id="explain" class="btn ghost">Explain</button>
+        <button id="listen" class="btn ghost">Listen <em>Pro</em></button>
+        <button id="pdf" class="btn ghost">PDF <em>Pro</em></button>
+        <button id="doc" class="btn ghost">Word <em>Pro</em></button>
+      </div>
+      <div class="row tr">
+        <select id="trLang">
+          <option>French</option><option>Spanish</option><option>Portuguese</option><option>German</option>
+          <option>Arabic</option><option>Hausa</option><option>Yoruba</option><option>Swahili</option><option>English</option>
+        </select>
+        <button id="translate" class="btn ghost">Translate <em>Pro</em></button>
+      </div>
+      <div id="ai" class="ai hide"></div>
+      <button id="delScan" class="btn danger block">Delete this scan</button>
+    </div>
+  </section>
+
+  <section id="saved" class="hide">
+    <div class="card">
+      <h2>Saved notices</h2>
+      <select id="folderFilter"></select>
+      <div id="list"></div>
+    </div>
+  </section>
+</main>
+<footer class="foot"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a><br>© SnapExplain</footer>
+
+<div id="camModal" class="modal hide">
+  <video id="video" autoplay playsinline muted></video>
+  <div class="camctl">
+    <button id="camCancel" class="btn ghost light">Cancel</button>
+    <button id="shot" class="shutter" aria-label="Capture"></button>
+    <span></span>
+  </div>
+</div>
+
+<script src="/ga.js"></script>
+<script src="consent.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="app.js"></script>
+</body></html>
