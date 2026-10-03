@@ -201,4 +201,12 @@ $('#code').onclick = async e => {
     token = j; S('token', token); renderPlan(); window.track?.('purchase', { method: 'code' }); alert('Pro unlocked for 30 days ✔');
   } catch { alert('Server not reachable.') }
 };
+$('#reset').onclick = e => {
+  e.preventDefault();
+  if (!confirm('Switch this device back to Free? You will lose Pro here unless you have an access code or pay again.')) return;
+  token = null; localStorage.removeItem('token'); if (dev) S('devFree', true); renderPlan();
+};
+let installEvt = null;   // "Install app" link appears when the browser allows installing
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; $('#inst').classList.remove('hide'); $('#instDot').classList.remove('hide') });
+$('#inst').onclick = async e => { e.preventDefault(); if (!installEvt) return; installEvt.prompt(); await installEvt.userChoice; installEvt = null; $('#inst').classList.add('hide'); $('#instDot').classList.add('hide'); window.track?.('install') };
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');

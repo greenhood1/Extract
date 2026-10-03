@@ -30,7 +30,7 @@ window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(argu
 });
 app.use(express.json({ limit: '8mb' }));
 // Flat project (no folders): only these files are ever shared with visitors; server.js and secrets never are.
-const PUBLIC = ['index.html', 'app.js', 'style.css', 'consent.js', 'sw.js', 'manifest.json', 'icon.svg', 'privacy.html', 'terms.html', 'admin.html'];
+const PUBLIC = ['index.html', 'app.js', 'style.css', 'consent.js', 'sw.js', 'manifest.json', 'icon.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'privacy.html', 'terms.html', 'admin.html'];
 app.use((req, res, next) => {
   if (req.method !== 'GET') return next();
   const f = req.path === '/' ? 'index.html' : req.path.slice(1);

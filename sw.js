@@ -1,4 +1,4 @@
-const C = 'snapexplain-v7', A = ['/', '/style.css', '/app.js', '/manifest.json', '/icon.svg'];
+const C = 'snapexplain-v8', A = ['/', '/style.css', '/app.js', '/manifest.json', '/icon.svg'];
 self.addEventListener('install', e => e.waitUntil(caches.open(C).then(c => c.addAll(A))));
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET' || e.request.url.includes('/api/')) return;
