@@ -148,4 +148,4 @@ app.get('/api/verify', async (req, res) => {
   res.status(402).json({ error: 'Payment not confirmed.' });
 });
 
-app.listen(E.PORT || 3000, () => console.log('SnapExplain on ' + BASE));
+app.listen(E.PORT || 3000, () => console.log('Nimbo on ' + BASE));

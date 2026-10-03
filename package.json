@@ -1,5 +1,5 @@
 {
-  "name": "snapexplain",
+  "name": "nimbo",
   "version": "1.0.0",
   "description": "Snap or upload an image, extract text, edit, save, translate, listen, export and share.",
   "main": "server.js",

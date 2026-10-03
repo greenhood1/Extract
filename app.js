@@ -80,7 +80,7 @@ async function toJpeg(f, max = 1600) {  // resized copy for AI (smaller upload)
   return c.toDataURL('image/jpeg', .85).split(',')[1];
 }
 async function prep(f) {  // grayscale + contrast + upscale small images: helps Tesseract
-  const i = await loadImg(f), s = i.width < 1500 ? 1500 / i.width : 1, c = document.createElement('canvas');
+  const i = await loadImg(f), m = Math.max(i.width, i.height), s = m > 1800 ? 1800 / m : (i.width < 1000 ? 1200 / i.width : 1), c = document.createElement('canvas');
   c.width = i.width * s; c.height = i.height * s;
   const x = c.getContext('2d'); x.filter = 'grayscale(1) contrast(1.35)'; x.drawImage(i, 0, 0, c.width, c.height);
   return c;
@@ -143,13 +143,13 @@ $('#pdf').onclick = () => {
   if (!needPro('PDF export')) return;
   const doc = new jspdf.jsPDF(), lines = doc.splitTextToSize($('#text').value, 180); let y = 15;
   lines.forEach(l => { if (y > 280) { doc.addPage(); y = 15 } doc.text(l, 15, y); y += 7 });
-  doc.save('snapexplain.pdf');
+  doc.save('nimbo.pdf');
 };
 $('#doc').onclick = () => {
   if (!needPro('Word export')) return;
   const h = $('#text').value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br>');
   const b = new Blob(['<html><meta charset="utf-8"><body>' + h + '</body></html>'], { type: 'application/msword' });
-  Object.assign(document.createElement('a'), { href: URL.createObjectURL(b), download: 'snapexplain.doc' }).click();
+  Object.assign(document.createElement('a'), { href: URL.createObjectURL(b), download: 'nimbo.doc' }).click();
 };
 $('#delScan').onclick = () => {
   if (!confirm('Delete this scan and its text?')) return;
@@ -190,7 +190,7 @@ $('#tScan').onclick = () => show('scan'); $('#tSaved').onclick = () => show('sav
 $('#wa').onclick = e => {
   e.preventDefault();
   if (!wa) return alert('WhatsApp payment is not set up yet.');
-  open('https://wa.me/' + wa + '?text=' + encodeURIComponent('Hi, I want to pay for SnapExplain Pro. My card did not work.'), '_blank');
+  open('https://wa.me/' + wa + '?text=' + encodeURIComponent('Hi, I want to pay for Nimbo Pro. My card did not work.'), '_blank');
 };
 $('#code').onclick = async e => {
   e.preventDefault();

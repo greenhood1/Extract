@@ -1,5 +1,5 @@
 {
-  "id": "/", "name": "SnapExplain", "short_name": "SnapExplain", "start_url": "/", "scope": "/",
+  "id": "/", "name": "Nimbo", "short_name": "Nimbo", "start_url": "/", "scope": "/",
   "display": "standalone", "orientation": "portrait", "background_color": "#f4f5fa", "theme_color": "#4f46e5",
   "description": "Snap a notice, extract the text, edit, save and share.",
   "icons": [
