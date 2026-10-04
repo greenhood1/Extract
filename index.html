@@ -5,7 +5,8 @@
 <meta name="description" content="Snap or upload a photo of a notice board and instantly extract editable text. Copy, save, send, translate and listen.">
 <link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-192.png">
 <meta property="og:title" content="Nimbo – Snap a notice, get the text"><meta property="og:description" content="Snap or upload a photo of a notice and instantly get editable text."><link rel="icon" href="icon.svg">
-<meta name="theme-color" content="#4f46e5"><link rel="stylesheet" href="style.css">
+<meta name="theme-color" content="#4f46e5"><script>if((navigator.deviceMemory||4)<=2||(navigator.hardwareConcurrency||4)<=4)document.documentElement.className="lite"</script>
+<link rel="stylesheet" href="style.css">
 </head><body>
 <div class="top">
   <div class="bar-top">
@@ -112,8 +113,7 @@
   </div>
 </div>
 
-<script src="/ga.js"></script>
-<script src="consent.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
-<script src="app.js"></script>
+<script src="/ga.js" defer></script>
+<script src="consent.js" defer></script>
+<script src="app.js" defer></script>
 </body></html>

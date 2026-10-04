@@ -44,9 +44,18 @@ $('#plan').onclick = async () => {
   renderPlan();
 })();
 
+// ---------- Reading engine (Tesseract) loads only when needed ----------
+let tessP = null;
+const loadTess = () => tessP || (tessP = new Promise((ok, no) => {
+  const s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+  s.onload = ok; s.onerror = () => { tessP = null; no(new Error('load')) };
+  document.head.append(s);
+}));
+
 // ---------- Step 1: image (camera / upload) ----------
 function setImage(f) {
-  file = f;
+  file = f; loadTess().catch(() => {});
   $('#preview').src = URL.createObjectURL(f);
   $('#preview').classList.remove('hide'); $('#dropHint').classList.add('hide');
   $('#rmImg').classList.remove('hide'); $('#extract').disabled = false;
@@ -106,7 +115,7 @@ $('#extract').onclick = async () => {
   }
   if (text === null) {
     try {
-      const { data } = await Tesseract.recognize(await prep(file), $('#ocrLang').value, {
+      await loadTess(); const { data } = await Tesseract.recognize(await prep(file), $('#ocrLang').value, {
         logger: m => { if (m.status === 'recognizing text') { $('#fill').style.width = Math.round(m.progress * 100) + '%'; status('Reading text… ' + Math.round(m.progress * 100) + '%') } else status('Loading engine…') }
       });
       text = data.text.trim();
