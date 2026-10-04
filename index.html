@@ -3,7 +3,8 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Nimbo – Snap a notice, get the text</title>
 <meta name="description" content="Snap or upload a photo of a notice board and instantly extract editable text. Copy, save, send, translate and listen.">
-<link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-192.png">
+<meta property="og:title" content="Nimbo – Snap a notice, get the text"><meta property="og:description" content="Snap or upload a photo of a notice and instantly get editable text."><link rel="icon" href="icon.svg">
 <meta name="theme-color" content="#4f46e5"><link rel="stylesheet" href="style.css">
 </head><body>
 <div class="top">
@@ -52,6 +53,7 @@
       <h2><span class="n">3</span>Edit &amp; use</h2>
       <textarea id="text" placeholder="Extracted text appears here"></textarea>
       <div class="actions">
+        <button id="addPage" class="btn primary">Add page</button>
         <button id="copy" class="btn ghost">Copy</button>
         <button id="share" class="btn ghost">Send</button>
         <button id="save" class="btn ghost">Save</button>
@@ -70,6 +72,18 @@
       <div id="ai" class="ai hide"></div>
       <button id="delScan" class="btn danger block">Delete this scan</button>
     </div>
+
+    <div class="card hide" id="docCard">
+      <h2>Document <span id="pgCount" class="cnt"></span></h2>
+      <div id="pgList"></div>
+      <div class="actions">
+        <button id="dCopy" class="btn ghost">Copy all</button>
+        <button id="dPdf" class="btn ghost">PDF <em>Pro</em></button>
+        <button id="dWord" class="btn ghost">Word <em>Pro</em></button>
+        <button id="dSave" class="btn ghost">Save doc</button>
+        <button id="dNew" class="btn danger">New document</button>
+      </div>
+    </div>
   </section>
 
   <section id="saved" class="hide">
@@ -81,6 +95,13 @@
   </section>
 </main>
 <footer class="foot"><a href="#" id="inst" class="hide">Install app</a><span id="instDot" class="hide"> · </span><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="#" id="reset">Reset Pro on this device</a><br>© Nimbo</footer>
+
+<div id="planSheet" class="sheetwrap hide"><div class="sheet">
+  <h2 id="planWhat">Pro feature</h2>
+  <button id="pDay" class="btn primary block"></button>
+  <button id="pMonth" class="btn primary block"></button>
+  <button id="pCancel" class="btn ghost block">Not now</button>
+</div></div>
 
 <div id="camModal" class="modal hide">
   <video id="video" autoplay playsinline muted></video>
@@ -94,6 +115,5 @@
 <script src="/ga.js"></script>
 <script src="consent.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="app.js"></script>
 </body></html>

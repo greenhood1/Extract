@@ -2,7 +2,8 @@ const $ = s => document.querySelector(s);
 const L = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d } catch { return d } };
 const S = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 const FREE_SAVES = 10;
-let dev = false, price = 1500, priceUsd = 2, usdOn = false, wa = '';
+let dev = false, price = 1500, priceUsd = 2, priceDay = 300, priceDayUsd = 1, usdOn = false, wa = '';
+let doc = L('doc', { id: null, pages: [] });
 let notices = L('notices', []), token = L('token', null), file = null, stream = null;
 let device = L('device', null) || (() => { const d = crypto.randomUUID(); S('device', d); return d })();
 const isPro = () => token && token.exp > Date.now();
@@ -12,28 +13,33 @@ const status = m => $('#status').textContent = m || '';
 function renderPlan() { $('#alt').classList.toggle('hide', !!isPro()); $('#plan').textContent = isPro() ? (dev ? 'PRO (test) ✓' : 'PRO ✓') : (dev ? 'Free (test)' : 'Free · Go Pro'); $('#plan').classList.toggle('pro', isPro()) }
 // Nigerians (Lagos time zone) pay in naira; everyone else pays in dollars once USD is enabled on the server.
 function cur() { return usdOn && Intl.DateTimeFormat().resolvedOptions().timeZone !== 'Africa/Lagos' ? 'USD' : 'NGN' }
-function priceTxt() { return cur() === 'USD' ? '$' + priceUsd : '₦' + price.toLocaleString() }
-async function upgrade() {
+function priceTxt(p = 'month') { const u = cur() === 'USD'; return u ? '$' + (p === 'day' ? priceDayUsd : priceUsd) : '₦' + (p === 'day' ? priceDay : price).toLocaleString() }
+async function upgrade(plan = 'month') {
   const email = prompt('Enter your email to pay (your receipt goes here):'); if (!email) return;
   try {
     window.track?.('begin_checkout');
-    const j = await (await fetch('/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, currency: cur() }) })).json();
+    const j = await (await fetch('/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, currency: cur(), plan }) })).json();
     j.url ? location.href = j.url : alert(j.error);
   } catch { alert('Server not reachable.') }
 }
-function needPro(what) { if (isPro()) return true; if (confirm(what + ' is a Pro feature (' + priceTxt() + ' for 30 days). Upgrade now?')) upgrade(); return false }
+function needPro(what) {
+  if (isPro()) return true;
+  $('#planWhat').textContent = what + ' is a Pro feature';
+  $('#pDay').textContent = '24-hour pass · ' + priceTxt('day'); $('#pMonth').textContent = '30 days · ' + priceTxt('month');
+  $('#planSheet').classList.remove('hide'); return false;
+}
 $('#plan').onclick = async () => {
   if (dev) { // test mode: tap the badge to switch between Free and Pro
     if (isPro()) { token = null; localStorage.removeItem('token'); S('devFree', true) }
     else { token = await (await fetch('/api/dev-pro', { method: 'POST' })).json(); S('token', token); S('devFree', false) }
     return renderPlan();
   }
-  if (!isPro()) upgrade();
+  if (!isPro()) needPro('Pro');
 };
 (async () => {
   const sid = new URLSearchParams(location.search).get('reference');
   if (sid) { const r = await fetch('/api/verify?reference=' + encodeURIComponent(sid)); if (r.ok) { token = await r.json(); S('token', token); window.track?.('purchase') } history.replaceState({}, '', '/') }
-  try { const cf = await (await fetch('/api/config')).json(); dev = cf.dev; price = cf.price; priceUsd = cf.priceUsd; usdOn = cf.usdOn; wa = cf.wa } catch {}
+  try { const cf = await (await fetch('/api/config')).json(); dev = cf.dev; price = cf.price; priceUsd = cf.priceUsd; usdOn = cf.usdOn; priceDay = cf.priceDay; priceDayUsd = cf.priceDayUsd; wa = cf.wa } catch {}
   if (dev && !isPro() && !L('devFree', false)) { try { token = await (await fetch('/api/dev-pro', { method: 'POST' })).json(); S('token', token) } catch {} }
   renderPlan();
 })();
@@ -91,7 +97,7 @@ async function accurateOcr() {
 }
 $('#extract').onclick = async () => {
   if (!file) return; window.track?.('extract');
-  $('#extract').disabled = true; $('#ai').classList.add('hide'); $('#bar').classList.remove('hide'); $('#fill').style.width = '0';
+  $('#extract').disabled = true; $('#extract').classList.add('working'); $('#extract').textContent = 'Reading…'; $('#ai').classList.add('hide'); $('#bar').classList.remove('hide'); $('#fill').style.width = '0';
   let text = null, note = '';
   if ($('#acc').checked) {
     status('Reading with AI…'); $('#fill').style.width = '60%';
@@ -110,7 +116,7 @@ $('#extract').onclick = async () => {
     $('#text').value = text || 'No text found.'; $('#result').classList.remove('hide');
     status('Done. You can edit the text below.' + note); $('#result').scrollIntoView({ behavior: 'smooth' });
   }
-  $('#extract').disabled = false; setTimeout(() => $('#bar').classList.add('hide'), 600);
+  $('#extract').disabled = false; $('#extract').classList.remove('working'); $('#extract').textContent = 'Extract text'; setTimeout(() => $('#bar').classList.add('hide'), 600);
 };
 
 // ---------- Step 3: use the text ----------
@@ -139,18 +145,66 @@ $('#listen').onclick = () => {
   const a = $('#ai'), t = !a.classList.contains('hide') && !a.textContent.startsWith('Thinking') ? a.textContent : $('#text').value;
   speechSynthesis.speak(new SpeechSynthesisUtterance(t));
 };
-$('#pdf').onclick = () => {
-  if (!needPro('PDF export')) return;
-  const doc = new jspdf.jsPDF(), lines = doc.splitTextToSize($('#text').value, 180); let y = 15;
-  lines.forEach(l => { if (y > 280) { doc.addPage(); y = 15 } doc.text(l, 15, y); y += 7 });
-  doc.save('nimbo.pdf');
+// Exports are built on the server (Pro only), so the paywall cannot be skipped from the browser.
+async function exportDoc(format, pages) {
+  if (!needPro('Export')) return;
+  status('Preparing file…');
+  try {
+    const r = await fetch('/api/export', { method: 'POST', headers: { 'content-type': 'application/json', 'x-pro-token': token?.t || '' }, body: JSON.stringify({ format, pages }) });
+    if (!r.ok) return status((await r.json()).error);
+    const b = await r.blob();
+    Object.assign(document.createElement('a'), { href: URL.createObjectURL(b), download: 'nimbo.' + (format === 'word' ? 'doc' : 'pdf') }).click();
+    status('Downloaded ✔');
+  } catch { status('Could not export. Try again.') }
+}
+$('#pdf').onclick = () => exportDoc('pdf', [$('#text').value]);
+$('#doc').onclick = () => exportDoc('word', [$('#text').value]);
+$('#pDay').onclick = () => { $('#planSheet').classList.add('hide'); upgrade('day') };
+$('#pMonth').onclick = () => { $('#planSheet').classList.add('hide'); upgrade('month') };
+$('#pCancel').onclick = () => $('#planSheet').classList.add('hide');
+
+// ---------- Multi-page document ----------
+function renderDoc() {
+  $('#docCard').classList.toggle('hide', !doc.pages.length);
+  $('#pgCount').textContent = doc.pages.length + (doc.pages.length === 1 ? ' page' : ' pages');
+  const list = $('#pgList'); list.innerHTML = '';
+  doc.pages.forEach((p, i) => {
+    const d = document.createElement('div'); d.className = 'item';
+    const t = document.createElement('div'); t.className = 't'; t.innerHTML = '<small></small><span></span>';
+    t.children[0].textContent = 'Page ' + (i + 1); t.children[1].textContent = p.replace(/\s+/g, ' ').slice(0, 70);
+    const x = Object.assign(document.createElement('button'), { textContent: 'Remove', className: 'btn danger' });
+    x.onclick = () => { doc.pages.splice(i, 1); S('doc', doc); renderDoc() };
+    d.append(t, x); list.append(d);
+  });
+}
+$('#addPage').onclick = async () => {
+  const text = $('#text').value.trim(); if (!text) return;
+  if (!doc.id) doc.id = crypto.randomUUID();
+  try {
+    const r = await fetch('/api/page', { method: 'POST', headers: { 'content-type': 'application/json', 'x-pro-token': token?.t || '' }, body: JSON.stringify({ docId: doc.id, device }) });
+    const j = await r.json();
+    if (!r.ok) { status(j.error); needPro('More pages'); return }
+    doc.pages.push(text); S('doc', doc); renderDoc();
+    status('Page ' + doc.pages.length + ' added ✔  Now snap the next page.');
+    clearImage(); $('#text').value = ''; $('#result').classList.add('hide'); scrollTo(0, 0);
+  } catch { status('Server not reachable.') }
 };
-$('#doc').onclick = () => {
-  if (!needPro('Word export')) return;
-  const h = $('#text').value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br>');
-  const b = new Blob(['<html><meta charset="utf-8"><body>' + h + '</body></html>'], { type: 'application/msword' });
-  Object.assign(document.createElement('a'), { href: URL.createObjectURL(b), download: 'nimbo.doc' }).click();
+$('#dCopy').onclick = async () => {
+  const t = doc.pages.join('\n\n');
+  try { await navigator.clipboard.writeText(t) } catch { const x = Object.assign(document.createElement('textarea'), { value: t }); document.body.append(x); x.select(); document.execCommand('copy'); x.remove() }
+  status('All pages copied ✔');
 };
+$('#dPdf').onclick = () => doc.pages.length && exportDoc('pdf', doc.pages);
+$('#dWord').onclick = () => doc.pages.length && exportDoc('word', doc.pages);
+$('#dNew').onclick = () => { if (confirm('Start a new document? Unsaved pages will be cleared.')) { doc = { id: null, pages: [] }; S('doc', doc); renderDoc() } };
+$('#dSave').onclick = () => {
+  if (!doc.pages.length) return;
+  if (!isPro() && notices.some(n => n.pages)) return needPro('Saving more than 1 document');
+  const folder = isPro() ? (prompt('Folder name (e.g. Novel):', 'General') || 'General') : 'General';
+  notices.unshift({ id: Date.now(), text: doc.pages.join('\n\n'), pages: doc.pages.slice(), folder, date: new Date().toLocaleDateString() });
+  S('notices', notices); status('Document saved ✔');
+};
+
 $('#delScan').onclick = () => {
   if (!confirm('Delete this scan and its text?')) return;
   $('#text').value = ''; $('#ai').classList.add('hide'); $('#result').classList.add('hide'); speechSynthesis.cancel(); clearImage();
@@ -172,10 +226,10 @@ function renderSaved() {
   shown.forEach(n => {
     const d = document.createElement('div'); d.className = 'item';
     const t = document.createElement('div'); t.className = 't'; t.innerHTML = '<small></small><span></span>';
-    t.children[0].textContent = n.folder + ' · ' + n.date; t.children[1].textContent = n.text.replace(/\s+/g, ' ').slice(0, 70);
+    t.children[0].textContent = (n.pages ? n.pages.length + ' pages · ' : '') + n.folder + ' · ' + n.date; t.children[1].textContent = n.text.replace(/\s+/g, ' ').slice(0, 70);
     const o = Object.assign(document.createElement('button'), { textContent: 'Open', className: 'btn ghost' });
     const x = Object.assign(document.createElement('button'), { textContent: 'Delete', className: 'btn danger' });
-    o.onclick = () => { show('scan'); $('#text').value = n.text; $('#result').classList.remove('hide'); scrollTo(0, 0) };
+    o.onclick = () => { show('scan'); if (n.pages) { doc = { id: null, pages: n.pages.slice() }; S('doc', doc); renderDoc() } else { $('#text').value = n.text; $('#result').classList.remove('hide') } scrollTo(0, 0) };
     x.onclick = () => { if (confirm('Delete this saved notice?')) { notices = notices.filter(m => m.id !== n.id); S('notices', notices); renderSaved() } };
     d.append(t, o, x); list.append(d);
   });
@@ -209,4 +263,5 @@ $('#reset').onclick = e => {
 let installEvt = null;   // "Install app" link appears when the browser allows installing
 addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; $('#inst').classList.remove('hide'); $('#instDot').classList.remove('hide') });
 $('#inst').onclick = async e => { e.preventDefault(); if (!installEvt) return; installEvt.prompt(); await installEvt.userChoice; installEvt = null; $('#inst').classList.add('hide'); $('#instDot').classList.add('hide'); window.track?.('install') };
+renderDoc();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
